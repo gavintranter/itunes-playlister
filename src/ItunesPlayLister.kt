@@ -20,9 +20,9 @@ fun main(args: Array<String>) {
             .map { it -> it.replace("&#38;", "&") }
 
     // if there is a better way of doing this I cant see it, this is more readable than putting it in the merges below
-    val ids = data.partition { it.startsWith(trackIdKey) }.component1().map { captureXmlIntegerValue(it) }
-    val track = data.partition { it.startsWith(nameKey) }.component1().map { captureXmlStringValue(it) }
-    val artist = data.partition { it.startsWith(artistKey) }.component1().map { captureXmlStringValue(it) }
+    val ids = data.partition { it.startsWith(trackIdKey) }.component1().map { replaceXmlWithIntegerValue(it) }
+    val track = data.partition { it.startsWith(nameKey) }.component1().map { replaceXmlWithStringValue(it) }
+    val artist = data.partition { it.startsWith(artistKey) }.component1().map { replaceXmlWithStringValue(it) }
 
     val tracks = artist.merge(track, { it, other -> Pair(it, other)})
             .merge(ids, { it, other -> Track(other, it.first, it.second) })
@@ -31,8 +31,8 @@ fun main(args: Array<String>) {
     ids.drop(tracks.count()).forEach { println(tracks.get(it)) }
 }
 
-private fun captureXmlStringValue(it: String) = it.replace(xmlValueCapture("string"), "$1")
+private fun replaceXmlWithStringValue(it: String) = it.replace(xmlValueCapture("string"), "$1")
 
-private fun captureXmlIntegerValue(it: String) = it.replace(xmlValueCapture("integer"), "$1")
+private fun replaceXmlWithIntegerValue(it: String) = it.replace(xmlValueCapture("integer"), "$1")
 
 private fun xmlValueCapture(valueType: String) = ".*<$valueType>(.+?)</$valueType>".toRegex()
