@@ -8,17 +8,21 @@ data class Track(val id: String, val artist: String, val name: String) {
     }
 }
 
+private val artistKey = "<key>Artist</key>"
+private val nameKey = "<key>Name</key>"
+private val trackIdKey = "<key>Track ID</key>"
+
 fun main(args: Array<String>) {
     val lines = File("/users/Gavin/Documents/OxfordGroovyTime.xml").readLines()
 
     val data = lines.map { it.trim() }
-            .filter { it.contains("<key>Artist</key>") || it.contains("<key>Name</key>") || it.contains("<key>Track ID</key>") }
-            .map { it -> it.replace("&#38;", "&")}
+            .filter { it.startsWith(trackIdKey) || it.startsWith(artistKey) || it.startsWith(nameKey) }
+            .map { it -> it.replace("&#38;", "&") }
 
     // if there is a better way of doing this I cant see it, this is more readable than putting it in the merges below
-    val ids = data.partition { it.startsWith("<key>Track ID</key>") }.component1().map {it.replace(captureInteger(), "$1")}
-    val track = data.partition { it.startsWith("<key>Name</key>") }.component1().map {it.replace(captureString(), "$1")}
-    val artist = data.partition { it.startsWith("<key>Artist</key>") }.component1().map {it.replace(captureString(), "$1")}
+    val ids = data.partition { it.startsWith(trackIdKey) }.component1().map { captureXmlIntegerValue(it) }
+    val track = data.partition { it.startsWith(nameKey) }.component1().map { captureXmlStringValue(it) }
+    val artist = data.partition { it.startsWith(artistKey) }.component1().map { captureXmlStringValue(it) }
 
     val tracks = artist.merge(track, { it, other -> Pair(it, other)})
             .merge(ids, { it, other -> Track(other, it.first, it.second) })
@@ -27,14 +31,8 @@ fun main(args: Array<String>) {
     ids.drop(tracks.count()).forEach { println(tracks.get(it)) }
 }
 
-private fun captureString(): Regex {
-    return xmlValueCapture("string");
-}
+private fun captureXmlStringValue(it: String) = it.replace(xmlValueCapture("string"), "$1")
 
-private fun captureInteger(): Regex {
-    return xmlValueCapture("integer")
-}
+private fun captureXmlIntegerValue(it: String) = it.replace(xmlValueCapture("integer"), "$1")
 
-private fun xmlValueCapture(valueType: String): Regex {
-    return ".*<$valueType>(.+?)</$valueType>".toRegex()
-}
+private fun xmlValueCapture(valueType: String) = ".*<$valueType>(.+?)</$valueType>".toRegex()
