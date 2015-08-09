@@ -15,7 +15,7 @@ fun main(args: Array<String>) {
             .filter { it.contains("<key>Artist</key>") || it.contains("<key>Name</key>") || it.contains("<key>Track ID</key>") }
             .map { it -> it.replace("&#38;", "&")}
 
-    // there is probably a better way of doing this but I cant see it, and this is more readable, that putting it in the merges below
+    // if there is a better way of doing this I cant see it, this is more readable than putting it in the merges below
     val ids = data.partition { it.startsWith("<key>Track ID</key>") }.component1().map {it.replace(captureInteger(), "$1")}
     val track = data.partition { it.startsWith("<key>Name</key>") }.component1().map {it.replace(captureString(), "$1")}
     val artist = data.partition { it.startsWith("<key>Artist</key>") }.component1().map {it.replace(captureString(), "$1")}
