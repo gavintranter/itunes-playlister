@@ -2,7 +2,7 @@ import java.io.File
 import kotlin.dom.parseXml
 import kotlin.text.Regex
 
-data class Track(val id: String, val artist: String, val name: String) {
+private data class Track(val id: String, val artist: String, val name: String) {
     override fun toString(): String {
         return "$artist - $name"
     }
