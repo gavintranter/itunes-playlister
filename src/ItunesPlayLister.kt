@@ -7,27 +7,42 @@ private data class Track(val id: String, val artist: String, val name: String) {
     }
 }
 
+private data class Playlist(val name: String, val tracks: List<Track?>) {
+    override fun toString(): String {
+        val string = "$name:\n"
+        return string + tracks.joinToString("\n")
+    }
+}
+
 private val artistKey = "<key>Artist</key>"
 private val nameKey = "<key>Name</key>"
 private val trackIdKey = "<key>Track ID</key>"
 
 fun main(args: Array<String>) {
-    val lines = File("/users/Gavin/Documents/OxfordGroovyTime.xml").readLines()
 
+    val files = File("/users/Gavin/Documents/playlists").listFiles()
+    files.forEach { println("\n==========\n\n" + createPlaylist(it.readLines()))}
+}
+
+private fun createPlaylist(lines: List<String>): Playlist {
+    return Playlist(lines.last { it.contains(nameKey) }.let { replaceXmlWithStringValue(it) }, getTracks(lines))
+}
+
+private fun getTracks(lines: List<String>): List<Track?> {
     val data = lines.map { it.trim() }
             .filter { it.startsWith(trackIdKey) || it.startsWith(artistKey) || it.startsWith(nameKey) }
             .map { it -> it.replace("&#38;", "&") }
 
     // if there is a better way of doing this I cant see it, this is more readable than putting it in the merges below
-    val ids = data.partition { it.startsWith(trackIdKey) }.component1().map { replaceXmlWithIntegerValue(it) }
-    val track = data.partition { it.startsWith(nameKey) }.component1().map { replaceXmlWithStringValue(it) }
-    val artist = data.partition { it.startsWith(artistKey) }.component1().map { replaceXmlWithStringValue(it) }
+    val ids = data.partition { it.startsWith(trackIdKey) }.component1().map { replaceXmlWithIntegerValue(it) }.orEmpty()
+    val track = data.partition { it.startsWith(nameKey) }.component1().map { replaceXmlWithStringValue(it) }.orEmpty()
+    val artist = data.partition { it.startsWith(artistKey) }.component1().map { replaceXmlWithStringValue(it) }.orEmpty()
 
-    val tracks = artist.merge(track, { it, other -> Pair(it, other)})
+    val tracks = artist.merge(track, { it, other -> Pair(it, other) })
             .merge(ids, { it, other -> Track(other, it.first, it.second) })
             .toMap { it.id }
 
-    ids.drop(tracks.count()).forEach { println(tracks.get(it)) }
+    return ids.drop(tracks.count()).map { tracks.get(it) }
 }
 
 private fun replaceXmlWithStringValue(it: String) = it.replace(xmlValueCapture("string"), "$1")
