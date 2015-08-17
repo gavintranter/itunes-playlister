@@ -20,7 +20,7 @@ private val trackIdKey = "<key>Track ID</key>"
 
 fun main(args: Array<String>) {
 
-    val files = File("/users/Gavin/Documents/playlists").listFiles()
+    val files = File("/users/Gavin/Documents/playlists").listFiles().filter { it -> !it.isHidden() }
     files.forEach { println("\n==========\n\n" + createPlaylist(it.readLines()))}
 }
 
