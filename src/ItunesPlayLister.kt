@@ -8,7 +8,7 @@ private data class Track(val id: String, val artist: String, val name: String) {
 }
 
 private data class Playlist(val name: String, val tracks: List<Track?>) {
-    override fun toString(): String {
+    override fun toString() : String {
         val string = "$name:\n"
         return string + tracks.joinToString("\n")
     }
@@ -25,7 +25,10 @@ fun main(args: Array<String>) {
 }
 
 private fun createPlaylist(lines: List<String>): Playlist {
-    return Playlist(lines.last { it.contains(nameKey) }.let { replaceXmlWithStringValue(it) }, getTracks(lines))
+    val name = lines.lastOrNull { it.contains(nameKey) }.let { replaceXmlWithStringValue(it, "Not a playlist") }
+    val list = getTracks(lines)
+
+    return Playlist(name, list)
 }
 
 private fun getTracks(lines: List<String>): List<Track?> {
@@ -45,7 +48,7 @@ private fun getTracks(lines: List<String>): List<Track?> {
     return ids.drop(tracks.count()).map { tracks.get(it) }
 }
 
-private fun replaceXmlWithStringValue(it: String) = it.replace(xmlValueCapture("string"), "$1")
+private fun replaceXmlWithStringValue(it: String?, default: String = "??") = it?.replace(xmlValueCapture("string"), "$1") ?: default
 
 private fun replaceXmlWithIntegerValue(it: String) = it.replace(xmlValueCapture("integer"), "$1")
 
