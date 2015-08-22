@@ -20,7 +20,7 @@ private val trackIdKey = "<key>Track ID</key>"
 
 fun main(args: Array<String>) {
 
-    val files = File("/users/Gavin/Documents/playlists").listFiles().filter { it -> !it.isHidden() }
+    val files = File("/users/Gavin/Documents/playlists").listFiles().filter { it.extension.equals("xml", true) }
     files.forEach { println("\n==========\n\n" + createPlaylist(it.readLines()))}
 }
 
@@ -34,7 +34,7 @@ private fun createPlaylist(lines: List<String>): Playlist {
 private fun getTracks(lines: List<String>): List<Track> {
     val data = lines.map { it.trim() }
             .filter { it.startsWith(trackIdKey) || it.startsWith(artistKey) || it.startsWith(nameKey) }
-            .map { it -> it.replace("&#38;", "&") }
+            .map { it.replace("&#38;", "&") }
 
     // if there is a better way of doing this I cant see it, this is more readable than putting it in the merges below
     val ids = data.partition { it.startsWith(trackIdKey) }.component1().map { replaceXmlWithIntegerValue(it) }
