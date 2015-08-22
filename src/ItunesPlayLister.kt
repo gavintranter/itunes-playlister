@@ -7,7 +7,7 @@ private data class Track(val id: String, val artist: String, val name: String) {
     }
 }
 
-private data class Playlist(val name: String, val tracks: List<Track?>) {
+private data class Playlist(val name: String, val tracks: List<Track>) {
     override fun toString() : String {
         val string = "$name:\n"
         return string + tracks.joinToString("\n")
@@ -31,25 +31,25 @@ private fun createPlaylist(lines: List<String>): Playlist {
     return Playlist(name, list)
 }
 
-private fun getTracks(lines: List<String>): List<Track?> {
+private fun getTracks(lines: List<String>): List<Track> {
     val data = lines.map { it.trim() }
             .filter { it.startsWith(trackIdKey) || it.startsWith(artistKey) || it.startsWith(nameKey) }
             .map { it -> it.replace("&#38;", "&") }
 
     // if there is a better way of doing this I cant see it, this is more readable than putting it in the merges below
-    val ids = data.partition { it.startsWith(trackIdKey) }.component1().map { replaceXmlWithIntegerValue(it) }.orEmpty()
-    val track = data.partition { it.startsWith(nameKey) }.component1().map { replaceXmlWithStringValue(it) }.orEmpty()
-    val artist = data.partition { it.startsWith(artistKey) }.component1().map { replaceXmlWithStringValue(it) }.orEmpty()
+    val ids = data.partition { it.startsWith(trackIdKey) }.component1().map { replaceXmlWithIntegerValue(it) }
+    val track = data.partition { it.startsWith(nameKey) }.component1().map { replaceXmlWithStringValue(it) }
+    val artist = data.partition { it.startsWith(artistKey) }.component1().map { replaceXmlWithStringValue(it) }
 
     val tracks = artist.merge(track, { it, other -> Pair(it, other) })
             .merge(ids, { it, other -> Track(other, it.first, it.second) })
             .toMap { it.id }
 
-    return ids.drop(tracks.count()).map { tracks.get(it) }
+    return ids.drop(tracks.count()).map { tracks.getOrElse(it, { Track(it, "", "") }) }
 }
 
 private fun replaceXmlWithStringValue(it: String?, default: String = "??") = it?.replace(xmlValueCapture("string"), "$1") ?: default
 
-private fun replaceXmlWithIntegerValue(it: String) = it.replace(xmlValueCapture("integer"), "$1")
+private fun replaceXmlWithIntegerValue(it: String?, default: String = "??") = it?.replace(xmlValueCapture("integer"), "$1") ?: default
 
 private fun xmlValueCapture(valueType: String) = ".*<$valueType>(.+?)</$valueType>".toRegex()
