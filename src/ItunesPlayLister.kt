@@ -38,9 +38,9 @@ private fun getTracks(lines: List<String>): List<Track> {
             .map { it.replace("&#38;", "&") }
             .groupBy { isOfType(it) }
 
-    val ids = data.get(KeyType.ID)?.map { replaceXmlWithIntegerValue(it) } ?: throw IllegalArgumentException("List of Ids is required")
-    val tracks = data.get(KeyType.TRACK)?.map { replaceXmlWithStringValue(it) } ?: throw IllegalArgumentException("List of Tracks is required")
-    val artists = data.get(KeyType.ARTIST)?.map { replaceXmlWithStringValue(it) } ?: throw IllegalArgumentException("List of Artists is required")
+    val ids = data.get(KeyType.ID)?.map { replaceXmlWithIntegerValue(it) } ?: throw IllegalStateException("List of Ids is required")
+    val tracks = data.get(KeyType.TRACK)?.map { replaceXmlWithStringValue(it) } ?: throw IllegalStateException("List of Tracks is required")
+    val artists = data.get(KeyType.ARTIST)?.map { replaceXmlWithStringValue(it) } ?: throw IllegalStateException("List of Artists is required")
 
     val trackEntries = artists.merge(tracks, { it, other -> Pair(it, other) })
             .merge(ids, { it, other -> Track(other, it.first, it.second) })
