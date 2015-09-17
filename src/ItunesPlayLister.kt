@@ -14,18 +14,20 @@ private data class Playlist(val name: String, val tracks: List<Track>) {
     }
 }
 
-private val artistKey = "<key>Artist</key>"
-private val nameKey = "<key>Name</key>"
-private val trackIdKey = "<key>Track ID</key>"
+private enum class KeyType(val key: String) {
+    ARTIST("<key>Artist</key>"),
+    TRACK("<key>Name</key>"),
+    ID("<key>Track ID</key>");
+}
 
 fun main(args: Array<String>) {
 
     val files = File("/users/Gavin/Documents/playlists").listFiles().filter { it.extension.equals("xml", true) }
-    files.forEach { println("\n==========\n\n" + createPlaylist(it.readLines()))}
+    files.forEach { println("\n\n==========\n" + createPlaylist(it.readLines()))}
 }
 
 private fun createPlaylist(lines: List<String>): Playlist {
-    val name = lines.lastOrNull { it.contains(nameKey) }.let { replaceXmlWithStringValue(it, "Not a playlist") }
+    val name = lines.lastOrNull { it.contains(KeyType.TRACK.key) }.let { replaceXmlWithStringValue(it, "Not a playlist") }
     val list = getTracks(lines)
 
     return Playlist(name, list)
@@ -33,19 +35,33 @@ private fun createPlaylist(lines: List<String>): Playlist {
 
 private fun getTracks(lines: List<String>): List<Track> {
     val data = lines.map { it.trim() }
-            .filter { it.startsWith(trackIdKey) || it.startsWith(artistKey) || it.startsWith(nameKey) }
+            .filter { it.startsWith(KeyType.ID.key) || it.startsWith(KeyType.ARTIST.key) || it.startsWith(KeyType.TRACK.key) }
             .map { it.replace("&#38;", "&") }
+            .groupBy { isOfType(it) }
 
-    // if there is a better way of doing this I cant see it, this is more readable than putting it in the merges below
-    val ids = data.partition { it.startsWith(trackIdKey) }.component1().map { replaceXmlWithIntegerValue(it) }
-    val track = data.partition { it.startsWith(nameKey) }.component1().map { replaceXmlWithStringValue(it) }
-    val artist = data.partition { it.startsWith(artistKey) }.component1().map { replaceXmlWithStringValue(it) }
+    val ids = data.get(KeyType.ID)?.map { replaceXmlWithIntegerValue(it) }.orEmpty()
+    val tracks = data.get(KeyType.TRACK)?.map { replaceXmlWithStringValue(it) }.orEmpty()
+    val artists = data.get(KeyType.ARTIST)?.map { replaceXmlWithStringValue(it) }.orEmpty()
 
-    val tracks = artist.merge(track, { it, other -> Pair(it, other) })
+    val trackEntries = artists.merge(tracks, { it, other -> Pair(it, other) })
             .merge(ids, { it, other -> Track(other, it.first, it.second) })
             .toMap { it.id }
 
-    return ids.drop(tracks.count()).map { tracks.getOrElse(it, { Track(it, "", "") }) }
+    return ids.drop(trackEntries.count()).map { trackEntries.getOrElse(it, { Track(it, "", "") }) }
+}
+
+private fun isOfType(value: String): KeyType {
+    if (value.startsWith(KeyType.ARTIST.key)) {
+        return KeyType.ARTIST;
+    }
+    if (value.startsWith(KeyType.TRACK.key)) {
+        return KeyType.TRACK;
+    }
+    if (value.startsWith(KeyType.ID.key)) {
+        return KeyType.ID;
+    }
+
+    throw IllegalArgumentException("$value not an expected entry")
 }
 
 private fun replaceXmlWithStringValue(it: String?, default: String = "??") = it?.replace(xmlValueCapture("string"), "$1") ?: default
