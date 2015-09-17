@@ -57,7 +57,7 @@ private fun isOfType(value: String): KeyType {
         KeyType.TRACK;
     }
     else if (value.startsWith(KeyType.ID.key)) {
-        return KeyType.ID;
+        KeyType.ID;
     }
     else {
         throw IllegalArgumentException("$value not an expected entry")
