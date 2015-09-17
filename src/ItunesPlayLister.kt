@@ -28,9 +28,8 @@ fun main(args: Array<String>) {
 
 private fun createPlaylist(lines: List<String>): Playlist {
     val name = lines.lastOrNull { it.contains(KeyType.TRACK.key) }.let { replaceXmlWithStringValue(it, "Not a playlist") }
-    val list = getTracks(lines)
 
-    return Playlist(name, list)
+    return Playlist(name, getTracks(lines))
 }
 
 private fun getTracks(lines: List<String>): List<Track> {
@@ -39,14 +38,15 @@ private fun getTracks(lines: List<String>): List<Track> {
             .map { it.replace("&#38;", "&") }
             .groupBy { isOfType(it) }
 
-    val ids = data.get(KeyType.ID)?.map { replaceXmlWithIntegerValue(it) }.orEmpty()
-    val tracks = data.get(KeyType.TRACK)?.map { replaceXmlWithStringValue(it) }.orEmpty()
-    val artists = data.get(KeyType.ARTIST)?.map { replaceXmlWithStringValue(it) }.orEmpty()
+    val ids = data.get(KeyType.ID)?.map { replaceXmlWithIntegerValue(it) } ?: throw IllegalArgumentException("List of Ids is required")
+    val tracks = data.get(KeyType.TRACK)?.map { replaceXmlWithStringValue(it) } ?: throw IllegalArgumentException("List of Tracks is required")
+    val artists = data.get(KeyType.ARTIST)?.map { replaceXmlWithStringValue(it) } ?: throw IllegalArgumentException("List of Artists is required")
 
     val trackEntries = artists.merge(tracks, { it, other -> Pair(it, other) })
             .merge(ids, { it, other -> Track(other, it.first, it.second) })
-            .toMap { it.id }
+            .toMap { it.id }    // the tracks arent in order, we need to "sort" them, this makes it easier, there might be a more functional way
 
+    // Drop ids used to define tracks til we get to the order defining ids then map the tracks to that order
     return ids.drop(trackEntries.count()).map { trackEntries.getOrElse(it, { Track(it, "", "") }) }
 }
 
