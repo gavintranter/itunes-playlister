@@ -1,5 +1,4 @@
 import java.io.File
-import kotlin.text.Regex
 
 private data class Track(val id: String, val artist: String, val name: String) {
     override fun toString(): String {
@@ -51,17 +50,18 @@ private fun getTracks(lines: List<String>): List<Track> {
 }
 
 private fun isOfType(value: String): KeyType {
-    if (value.startsWith(KeyType.ARTIST.key)) {
-        return KeyType.ARTIST;
+    return if (value.startsWith(KeyType.ARTIST.key)) {
+        KeyType.ARTIST;
     }
-    if (value.startsWith(KeyType.TRACK.key)) {
-        return KeyType.TRACK;
+    else if (value.startsWith(KeyType.TRACK.key)) {
+        KeyType.TRACK;
     }
-    if (value.startsWith(KeyType.ID.key)) {
+    else if (value.startsWith(KeyType.ID.key)) {
         return KeyType.ID;
     }
-
-    throw IllegalArgumentException("$value not an expected entry")
+    else {
+        throw IllegalArgumentException("$value not an expected entry")
+    }
 }
 
 private fun replaceXmlWithStringValue(it: String?, default: String = "??") = it?.replace(xmlValueCapture("string"), "$1") ?: default
