@@ -26,6 +26,7 @@ fun main(args: Array<String>) {
 }
 
 private fun createPlaylist(lines: List<String>): Playlist {
+//    todo determine if it is null or not beofre passing to replaceXmlWithStringValue
     val name = lines.lastOrNull { it.contains(KeyType.TRACK.key) }.let { replaceXmlWithStringValue(it, "Not a playlist") }
 
     return Playlist(name, getTracks(lines))
@@ -37,7 +38,7 @@ private fun getTracks(lines: List<String>): List<Track> {
             .map { it.replace("&#38;", "&") }
             .groupBy { isOfType(it) }
 
-    val ids = data.get(KeyType.ID)?.map { replaceXmlWithIntegerValue(it) } ?: throw IllegalStateException("List of Ids is required")
+    val ids = data.get(KeyType.ID)?.map { replaceXmlWithStringValue(it) } ?: throw IllegalStateException("List of Ids is required")
     val tracks = data.get(KeyType.TRACK)?.map { replaceXmlWithStringValue(it) } ?: throw IllegalStateException("List of Tracks is required")
     val artists = data.get(KeyType.ARTIST)?.map { replaceXmlWithStringValue(it) } ?: throw IllegalStateException("List of Artists is required")
 
@@ -64,8 +65,8 @@ private fun isOfType(value: String): KeyType {
     }
 }
 
-private fun replaceXmlWithStringValue(it: String?, default: String = "??") = it?.replace(xmlValueCapture("string"), "$1") ?: default
+//todo think of better name
+val dataRowValueRegex = ".*<(integer|string)>(.+?)</(integer|string)>".toRegex()
 
-private fun replaceXmlWithIntegerValue(it: String?, default: String = "??") = it?.replace(xmlValueCapture("integer"), "$1") ?: default
-
-private fun xmlValueCapture(valueType: String) = ".*<$valueType>(.+?)</$valueType>".toRegex()
+// todo make it non-optional
+private fun replaceXmlWithStringValue(it: String?, default: String = "??") = it?.replace(dataRowValueRegex, "$2") ?: default
