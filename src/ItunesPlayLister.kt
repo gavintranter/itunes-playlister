@@ -26,7 +26,7 @@ fun main(args: Array<String>) {
 }
 
 private fun createPlaylist(lines: List<String>): Playlist {
-//    todo determine if it is null or not beofre passing to replaceXmlWithStringValue
+//    todo determine if it is null or not before passing to replaceXmlWithStringValue
     val name = lines.lastOrNull { it.contains(KeyType.TRACK.key) }.let { replaceXmlWithStringValue(it, "Not a playlist") }
 
     return Playlist(name, getTracks(lines))
