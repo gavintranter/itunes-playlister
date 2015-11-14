@@ -26,8 +26,7 @@ fun main(args: Array<String>) {
 }
 
 private fun createPlaylist(lines: List<String>): Playlist {
-//    todo determine if it is null or not before passing to replaceXmlWithStringValue
-    val name = lines.lastOrNull { it.contains(KeyType.TRACK.key) }.let { replaceXmlWithStringValue(it, "Not a playlist") }
+    val name = lines.last { it.contains(KeyType.TRACK.key) }.let { replaceXmlWithStringValue(it) }
 
     return Playlist(name, getTracks(lines))
 }
@@ -38,13 +37,13 @@ private fun getTracks(lines: List<String>): List<Track> {
             .map { it.replace("&#38;", "&") }
             .groupBy { isOfType(it) }
 
-    val ids = data.get(KeyType.ID)?.map { replaceXmlWithStringValue(it) } ?: throw IllegalStateException("List of Ids is required")
-    val tracks = data.get(KeyType.TRACK)?.map { replaceXmlWithStringValue(it) } ?: throw IllegalStateException("List of Tracks is required")
-    val artists = data.get(KeyType.ARTIST)?.map { replaceXmlWithStringValue(it) } ?: throw IllegalStateException("List of Artists is required")
+    val ids = data[KeyType.ID]?.map { replaceXmlWithStringValue(it) } ?: throw IllegalStateException("List of Ids is required")
+    val tracks = data[KeyType.TRACK]?.map { replaceXmlWithStringValue(it) } ?: throw IllegalStateException("List of Tracks is required")
+    val artists = data[KeyType.ARTIST]?.map { replaceXmlWithStringValue(it) } ?: throw IllegalStateException("List of Artists is required")
 
-    val trackEntries = artists.merge(tracks, { it, other -> Pair(it, other) })
-            .merge(ids, { it, other -> Track(other, it.first, it.second) })
-            .toMap { it.id }    // the tracks arent in order, we need to "sort" them, this makes it easier, there might be a more functional way
+    val trackEntries = artists.zip(tracks, { it, other -> Pair(it, other) })
+            .zip(ids, { it, other -> Track(other, it.first, it.second) })
+            .toMapBy { it.id }
 
     // Drop ids used to define tracks til we get to the order defining ids then map the tracks to that order
     return ids.drop(trackEntries.count()).map { trackEntries.getOrElse(it, { Track(it, "", "") }) }
@@ -68,5 +67,4 @@ private fun isOfType(value: String): KeyType {
 //todo think of better name
 val dataRowValueRegex = ".*<(integer|string)>(.+?)</(integer|string)>".toRegex()
 
-// todo make it non-optional
-private fun replaceXmlWithStringValue(it: String?, default: String = "??") = it?.replace(dataRowValueRegex, "$2") ?: default
+private fun replaceXmlWithStringValue(it: String) = it.replace(dataRowValueRegex, "$2")
