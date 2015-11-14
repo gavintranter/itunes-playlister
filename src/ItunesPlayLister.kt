@@ -19,9 +19,12 @@ private enum class KeyType(val key: String) {
     ID("<key>Track ID</key>");
 }
 
-fun main(args: Array<String>) {
+//todo think of better name
+private val dataRowValueRegex = ".*<(integer|string)>(.+?)</(integer|string)>".toRegex()
 
+fun main(args: Array<String>) {
     val files = File("/users/Gavin/Documents/playlists").listFiles().filter { it.extension.equals("xml", true) }
+
     files.forEach { println("\n\n==========\n" + createPlaylist(it.readLines()))}
 }
 
@@ -45,8 +48,7 @@ private fun getTracks(lines: List<String>): List<Track> {
             .zip(ids, { it, other -> Track(other, it.first, it.second) })
             .toMapBy { it.id }
 
-    // Drop ids used to define tracks til we get to the order defining ids then map the tracks to that order
-    return ids.drop(trackEntries.count()).map { trackEntries.getOrElse(it, { Track(it, "", "") }) }
+    return mapIdsToTracks(ids, trackEntries)
 }
 
 private fun isOfType(value: String): KeyType {
@@ -64,7 +66,7 @@ private fun isOfType(value: String): KeyType {
     }
 }
 
-//todo think of better name
-val dataRowValueRegex = ".*<(integer|string)>(.+?)</(integer|string)>".toRegex()
-
 private fun extractStringValue(it: String) = it.replace(dataRowValueRegex, "$2")
+
+private fun mapIdsToTracks(ids: List<String>, trackEntries: Map<String, Track>) =
+        ids.drop(trackEntries.count()).map { trackEntries.getOrElse(it, { Track(it, "", "") }) }
