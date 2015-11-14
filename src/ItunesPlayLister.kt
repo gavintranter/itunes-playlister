@@ -26,7 +26,7 @@ fun main(args: Array<String>) {
 }
 
 private fun createPlaylist(lines: List<String>): Playlist {
-    val name = lines.last { it.contains(KeyType.TRACK.key) }.let { replaceXmlWithStringValue(it) }
+    val name = lines.last { it.contains(KeyType.TRACK.key) }.let { extractStringValue(it) }
 
     return Playlist(name, getTracks(lines))
 }
@@ -37,9 +37,9 @@ private fun getTracks(lines: List<String>): List<Track> {
             .map { it.replace("&#38;", "&") }
             .groupBy { isOfType(it) }
 
-    val ids = data[KeyType.ID]?.map { replaceXmlWithStringValue(it) } ?: throw IllegalStateException("List of Ids is required")
-    val tracks = data[KeyType.TRACK]?.map { replaceXmlWithStringValue(it) } ?: throw IllegalStateException("List of Tracks is required")
-    val artists = data[KeyType.ARTIST]?.map { replaceXmlWithStringValue(it) } ?: throw IllegalStateException("List of Artists is required")
+    val ids = data[KeyType.ID]?.map { extractStringValue(it) } ?: throw IllegalStateException("List of Ids is required")
+    val tracks = data[KeyType.TRACK]?.map { extractStringValue(it) } ?: throw IllegalStateException("List of Tracks is required")
+    val artists = data[KeyType.ARTIST]?.map { extractStringValue(it) } ?: throw IllegalStateException("List of Artists is required")
 
     val trackEntries = artists.zip(tracks, { it, other -> Pair(it, other) })
             .zip(ids, { it, other -> Track(other, it.first, it.second) })
@@ -67,4 +67,4 @@ private fun isOfType(value: String): KeyType {
 //todo think of better name
 val dataRowValueRegex = ".*<(integer|string)>(.+?)</(integer|string)>".toRegex()
 
-private fun replaceXmlWithStringValue(it: String) = it.replace(dataRowValueRegex, "$2")
+private fun extractStringValue(it: String) = it.replace(dataRowValueRegex, "$2")
