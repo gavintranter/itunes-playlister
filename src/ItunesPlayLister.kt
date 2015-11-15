@@ -64,7 +64,7 @@ private fun getTracks(lines: List<String>): List<Track> {
             .zip(data.getRaw(Id::class)!!, {it, other -> Track(other as Id, it.first as Artist, it.second as Name)})
             .toMapBy { it.id }
 
-    return mapIdsToTracks(data.getRaw(Id::class) as List<Id>?, entries)
+    return mapIdsToTracks(data.getRaw(Id::class) as List<Id>, entries)
 }
 
 private fun extractElementValue(value: String): ElementPart {
@@ -84,7 +84,5 @@ private fun extractElementValue(value: String): ElementPart {
 
 private fun extractStringValue(it: String) = it.replace(elementValueRegex, "$2")
 
-private fun mapIdsToTracks(ids: List<Id>?, trackEntries: Map<Id, Track>) =
-        ids?.drop(trackEntries.count())
-                ?.map { trackEntries.getOrElse(it, { Track(it, Artist("Unknown"), Name("Unknown")) }) }
-                ?: throw IllegalStateException("Unable to map ids to Tracks")
+private fun mapIdsToTracks(ids: List<Id>, trackEntries: Map<Id, Track>) =
+        ids.drop(trackEntries.count()).map { trackEntries.getOrElse(it, { Track(it, Artist("Unknown"), Name("Unknown")) }) }
