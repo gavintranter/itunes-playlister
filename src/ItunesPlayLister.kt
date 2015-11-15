@@ -64,7 +64,7 @@ private fun getTracks(lines: List<String>): List<Track> {
             .zip(data.getRaw(Id::class)!!, {it, other -> Track(other as Id, it.first as Artist, it.second as Name)})
             .toMapBy { it.id }
 
-    return mapIdsToTracks(data[Id::class] as List<Id>?, entries)
+    return mapIdsToTracks(data.getRaw(Id::class) as List<Id>?, entries)
 }
 
 private fun extractElementValue(value: String): ElementPart {
