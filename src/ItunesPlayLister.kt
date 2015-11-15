@@ -1,6 +1,6 @@
 import java.io.File
 
-private data class Track(val id: String, val artist: String, val name: String) {
+private data class Track(val id: Id, val artist: Artist, val name: Name) {
     override fun toString(): String {
         return "$artist - $name"
     }
@@ -13,14 +13,33 @@ private data class Playlist(val name: String, val tracks: List<Track>) {
     }
 }
 
-private enum class KeyType(val key: String) {
-    ARTIST("<key>Artist</key>"),
-    TRACK("<key>Name</key>"),
-    ID("<key>Track ID</key>");
+private interface ElementPart
+
+private data class Id(val value: String) : ElementPart {
+    override fun toString() : String {
+        return value;
+    }
 }
 
-//todo think of better name
-private val dataRowValueRegex = ".*<(integer|string)>(.+?)</(integer|string)>".toRegex()
+private data class Artist(val value: String) : ElementPart {
+    override fun toString() : String {
+        return value;
+    }
+}
+
+private data class Name(val value: String) : ElementPart {
+    override fun toString() : String {
+        return value;
+    }
+}
+
+private enum class KeyType(val key: String) {
+    ID("<key>Track ID</key>"),
+    ARTIST("<key>Artist</key>"),
+    TRACK("<key>Name</key>")
+}
+
+private val elementValueRegex = ".*<(integer|string)>(.+?)</(integer|string)>".toRegex()
 
 fun main(args: Array<String>) {
     val files = File("/users/Gavin/Documents/playlists").listFiles().filter { it.extension.equals("xml", true) }
@@ -38,35 +57,34 @@ private fun getTracks(lines: List<String>): List<Track> {
     val data = lines.map { it.trim() }
             .filter { it.startsWith(KeyType.ID.key) || it.startsWith(KeyType.ARTIST.key) || it.startsWith(KeyType.TRACK.key) }
             .map { it.replace("&#38;", "&") }
-            .groupBy { isOfType(it) }
+            .map { extractElementValue(it) }
+            .groupBy { it.javaClass.kotlin }
 
-    val ids = data[KeyType.ID]?.map { extractStringValue(it) } ?: throw IllegalStateException("List of Ids is required")
-    val tracks = data[KeyType.TRACK]?.map { extractStringValue(it) } ?: throw IllegalStateException("List of Tracks is required")
-    val artists = data[KeyType.ARTIST]?.map { extractStringValue(it) } ?: throw IllegalStateException("List of Artists is required")
-
-    val trackEntries = artists.zip(tracks, { it, other -> Pair(it, other) })
-            .zip(ids, { it, other -> Track(other, it.first, it.second) })
+    val entries = data.getRaw(Artist::class)!!.zip(data.getRaw(Name::class)!!, { it, other -> Pair(it, other)})
+            .zip(data.getRaw(Id::class)!!, {it, other -> Track(other as Id, it.first as Artist, it.second as Name)})
             .toMapBy { it.id }
 
-    return mapIdsToTracks(ids, trackEntries)
+    return mapIdsToTracks(data[Id::class] as List<Id>?, entries)
 }
 
-private fun isOfType(value: String): KeyType {
-    return if (value.startsWith(KeyType.ARTIST.key)) {
-        KeyType.ARTIST;
+private fun extractElementValue(value: String): ElementPart {
+    return if (value.startsWith(KeyType.ID.key)) {
+        Id(extractStringValue(value))
+    }
+    else if (value.startsWith(KeyType.ARTIST.key)) {
+        Artist(extractStringValue(value))
     }
     else if (value.startsWith(KeyType.TRACK.key)) {
-        KeyType.TRACK;
-    }
-    else if (value.startsWith(KeyType.ID.key)) {
-        KeyType.ID;
+        Name(extractStringValue(value))
     }
     else {
         throw IllegalArgumentException("$value not an expected entry")
     }
 }
 
-private fun extractStringValue(it: String) = it.replace(dataRowValueRegex, "$2")
+private fun extractStringValue(it: String) = it.replace(elementValueRegex, "$2")
 
-private fun mapIdsToTracks(ids: List<String>, trackEntries: Map<String, Track>) =
-        ids.drop(trackEntries.count()).map { trackEntries.getOrElse(it, { Track(it, "", "") }) }
+private fun mapIdsToTracks(ids: List<Id>?, trackEntries: Map<Id, Track>) =
+        ids?.drop(trackEntries.count())
+                ?.map { trackEntries.getOrElse(it, { Track(it, Artist("Unknown"), Name("Unknown")) }) }
+                ?: throw IllegalStateException("Unable to map ids to Tracks")
