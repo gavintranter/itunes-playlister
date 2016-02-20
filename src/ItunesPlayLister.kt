@@ -61,12 +61,12 @@ private fun getTracks(lines: List<String>): List<Track> {
             .map { extractElementValue(it) }
             .groupBy { it.javaClass.kotlin }
 
-    val entries: Map<Id, Track>? = data[Artist::class]?.zip(data[Name::class]!!, { it, other -> Pair(it, other)})
-            ?.zip(data[Id::class]!!, { it, other -> Track(other as Id, it.first as Artist, it.second as Name)})
-            ?.associateBy { it.id }
+    val entries: Map<Id, Track> = data[Artist::class]!!.zip(data[Name::class]!!, { it, other -> Pair(it, other)})
+            .zip(data[Id::class]!!, { it, other -> Track(other as Id, it.first as Artist, it.second as Name)})
+            .associateBy { it.id }
 
-    @Suppress("UNCHECKED_CAST")
-    return mapIdsToTracks(data[Id::class]!! as List<Id>, entries!!)
+    @Suppress("UNCHECKED_CAST") // we know its a List<Id> and given the above didn't NPE it will be safe here
+    return mapIdsToTracks(data[Id::class]!!.drop(entries.count()) as List<Id>, entries)
 }
 
 private fun extractElementValue(value: String): Element {
@@ -87,4 +87,4 @@ private fun extractElementValue(value: String): Element {
 private fun extractStringValue(it: String) = it.replace(elementValueRegex, "$2")
 
 private fun mapIdsToTracks(ids: List<Id>, trackEntries: Map<Id, Track>) =
-        ids.drop(trackEntries.count()).map { trackEntries.getOrElse(it, { Track(it, Artist("Unknown"), Name("Unknown")) }) }
+        ids.map { trackEntries.getOrElse(it, { Track(it, Artist("Unknown"), Name("Unknown")) }) }
