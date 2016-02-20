@@ -1,4 +1,25 @@
 import java.io.File
+import kotlin.reflect.KClass
+
+private interface Element
+
+private data class Id(val value: String) : Element {
+    override fun toString() : String {
+        return value;
+    }
+}
+
+private data class Artist(val value: String) : Element {
+    override fun toString() : String {
+        return value;
+    }
+}
+
+private data class Name(val value: String) : Element {
+    override fun toString() : String {
+        return value;
+    }
+}
 
 private data class Track(val id: Id, val artist: Artist, val name: Name) {
     override fun toString(): String {
@@ -10,26 +31,6 @@ private data class Playlist(val name: String, val tracks: List<Track>) {
     override fun toString() : String {
         val string = "$name:\n"
         return string + tracks.joinToString("\n")
-    }
-}
-
-private interface ElementPart
-
-private data class Id(val value: String) : ElementPart {
-    override fun toString() : String {
-        return value;
-    }
-}
-
-private data class Artist(val value: String) : ElementPart {
-    override fun toString() : String {
-        return value;
-    }
-}
-
-private data class Name(val value: String) : ElementPart {
-    override fun toString() : String {
-        return value;
     }
 }
 
@@ -54,20 +55,21 @@ private fun createPlaylist(lines: List<String>): Playlist {
 }
 
 private fun getTracks(lines: List<String>): List<Track> {
-    val data = lines.map { it.trim() }
+    val data: Map<in KClass<Element>, List<Element>> = lines.map { it.trim() }
             .filter { it.startsWith(KeyType.ID.key) || it.startsWith(KeyType.ARTIST.key) || it.startsWith(KeyType.TRACK.key) }
             .map { it.replace("&#38;", "&") }
             .map { extractElementValue(it) }
             .groupBy { it.javaClass.kotlin }
 
-    val entries = data.getRaw(Artist::class)!!.zip(data.getRaw(Name::class)!!, { it, other -> Pair(it, other)})
-            .zip(data.getRaw(Id::class)!!, {it, other -> Track(other as Id, it.first as Artist, it.second as Name)})
-            .toMapBy { it.id }
+    val entries: Map<Id, Track>? = data[Artist::class]?.zip(data[Name::class]!!, { it, other -> Pair(it, other)})
+            ?.zip(data[Id::class]!!, { it, other -> Track(other as Id, it.first as Artist, it.second as Name)})
+            ?.associateBy { it.id }
 
-    return mapIdsToTracks(data.getRaw(Id::class) as List<Id>, entries)
+    @Suppress("UNCHECKED_CAST")
+    return mapIdsToTracks(data[Id::class]!! as List<Id>, entries!!)
 }
 
-private fun extractElementValue(value: String): ElementPart {
+private fun extractElementValue(value: String): Element {
     return if (value.startsWith(KeyType.ID.key)) {
         Id(extractStringValue(value))
     }
