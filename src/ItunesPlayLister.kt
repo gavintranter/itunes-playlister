@@ -76,11 +76,8 @@ private fun extractElementValue(value: String): Element {
     else if (value.startsWith(KeyType.ARTIST.key)) {
         Artist(extractStringValue(value))
     }
-    else if (value.startsWith(KeyType.TRACK.key)) {
+    else {  // if its not and ID or ARTIST it most be a name.
         Name(extractStringValue(value))
-    }
-    else {
-        throw IllegalArgumentException("$value not an expected entry")
     }
 }
 
