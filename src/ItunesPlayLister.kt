@@ -29,7 +29,7 @@ private data class Track(val id: Id, val artist: Artist, val name: Name) {
 
 private data class Playlist(val name: String, val tracks: List<Track>) {
     override fun toString() : String {
-        val string = "$name:\n"
+        val string = "\n\n==========\n$name:\n"
         return string + tracks.joinToString("\n")
     }
 }
@@ -45,7 +45,7 @@ private val elementValueRegex = ".*<(integer|string)>(.+?)</(integer|string)>".t
 fun main(args: Array<String>) {
     val files = File("/users/Gavin/Documents/playlists").listFiles().filter { it.extension.equals("xml", true) }
 
-    files.forEach { println("\n\n==========\n" + createPlaylist(it.readLines()))}
+    files.forEach { println(createPlaylist(it.readLines()))}
 }
 
 private fun createPlaylist(lines: List<String>): Playlist {
