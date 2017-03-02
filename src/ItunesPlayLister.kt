@@ -5,19 +5,19 @@ private interface Element
 
 private data class Id(val value: String) : Element {
     override fun toString() : String {
-        return value;
+        return value
     }
 }
 
 private data class Artist(val value: String) : Element {
     override fun toString() : String {
-        return value;
+        return value
     }
 }
 
 private data class Name(val value: String) : Element {
     override fun toString() : String {
-        return value;
+        return value
     }
 }
 
@@ -49,16 +49,16 @@ fun main(args: Array<String>) {
 }
 
 private fun createPlaylist(lines: List<String>): Playlist {
-    val name = lines.last { it.contains(KeyType.TRACK.key) }.let { extractStringValue(it) }
+    val name = lines.last { it.contains(KeyType.TRACK.key) }.let(::extractStringValue)
 
     return Playlist(name, getTracks(lines))
 }
 
 private fun getTracks(lines: List<String>): List<Track> {
-    val data: Map<in KClass<Element>, List<Element>> = lines.map { it.trim() }
+    val data: Map<in KClass<Element>, List<Element>> = lines.map(String::trim)
             .filter { it.startsWith(KeyType.ID.key) || it.startsWith(KeyType.ARTIST.key) || it.startsWith(KeyType.TRACK.key) }
             .map { it.replace("&#38;", "&") }
-            .map { extractElementValue(it) }
+            .map(::extractElementValue)
             .groupBy { it.javaClass.kotlin }
 
     val entries: Map<Id, Track> = data[Artist::class]!!.zip(data[Name::class]!!, { it, other -> Pair(it, other)})
@@ -69,16 +69,10 @@ private fun getTracks(lines: List<String>): List<Track> {
     return mapIdsToTracks(data[Id::class]!!.drop(entries.count()) as List<Id>, entries)
 }
 
-private fun extractElementValue(value: String): Element {
-    return if (value.startsWith(KeyType.ID.key)) {
-        Id(extractStringValue(value))
-    }
-    else if (value.startsWith(KeyType.ARTIST.key)) {
-        Artist(extractStringValue(value))
-    }
-    else {  // if its not and ID or ARTIST it most be a name.
-        Name(extractStringValue(value))
-    }
+private fun extractElementValue(value: String): Element = when {
+    value.startsWith(KeyType.ID.key) -> Id(extractStringValue(value))
+    value.startsWith(KeyType.ARTIST.key) -> Artist(extractStringValue(value))
+    else -> Name(extractStringValue(value))
 }
 
 private fun extractStringValue(it: String) = it.replace(elementValueRegex, "$2")
