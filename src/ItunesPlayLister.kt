@@ -3,6 +3,8 @@ import kotlin.reflect.KClass
 
 private interface Element
 
+private data class Empty(val value: String = "") : Element
+
 private data class Id(val value: String) : Element {
     override fun toString() : String {
         return value
@@ -55,27 +57,27 @@ private fun createPlaylist(lines: List<String>): Playlist {
 }
 
 private fun getTracks(lines: List<String>): List<Track> {
-    val data: Map<in KClass<Element>, List<Element>> = lines.map(String::trim)
-            .filter { it.startsWith(KeyType.ID.key) || it.startsWith(KeyType.ARTIST.key) || it.startsWith(KeyType.TRACK.key) }
-            .map { it.replace("&#38;", "&") }
+    val data: Map<KClass<out Element>, List<Element>> = lines.map(String::trim)
             .map(::extractElementValue)
             .groupBy { it.javaClass.kotlin }
 
-    val entries: Map<Id, Track> = data[Artist::class]!!.zip(data[Name::class]!!, { it, other -> Pair(it, other)})
-            .zip(data[Id::class]!!, { it, other -> Track(other as Id, it.first as Artist, it.second as Name)})
+    val entries = data.getOrElse(Artist::class, { emptyList() })
+            .zip(data.getOrElse(Name::class, { emptyList() })) { it, other -> Pair(it as Artist, other as Name) }
+            .zip(data.getOrElse(Id::class, { emptyList() })) { it, other -> Track(other as Id, it.first, it.second) }
             .associateBy { it.id }
 
     @Suppress("UNCHECKED_CAST") // we know its a List<Id> and given the above didn't NPE it will be safe here
-    return mapIdsToTracks(data[Id::class]!!.drop(entries.count()) as List<Id>, entries)
+    return mapIdsToTracks(data.getOrElse(Id::class, { throw IllegalStateException("No list of Ids founds") }).drop(entries.count()) as List<Id>, entries)
 }
 
 private fun extractElementValue(value: String): Element = when {
     value.startsWith(KeyType.ID.key) -> Id(extractStringValue(value))
     value.startsWith(KeyType.ARTIST.key) -> Artist(extractStringValue(value))
-    else -> Name(extractStringValue(value))
+    value.startsWith(KeyType.TRACK.key) -> Name(extractStringValue(value))
+    else -> Empty()
 }
 
-private fun extractStringValue(it: String) = it.replace(elementValueRegex, "$2")
+private fun extractStringValue(it: String) = it.replace(elementValueRegex, "$2").replace("&#38;", "&")
 
 private fun mapIdsToTracks(ids: List<Id>, trackEntries: Map<Id, Track>) =
         ids.map { trackEntries.getOrElse(it, { Track(it, Artist("Unknown"), Name("Unknown")) }) }
