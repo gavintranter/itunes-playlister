@@ -62,8 +62,8 @@ private fun getTracks(lines: List<String>): List<Track> {
             .groupBy { it.javaClass.kotlin }
 
     val entries = data.getOrElse(Artist::class, { throw IllegalStateException("No Artist list") })
-            .zip(data.getOrElse(Name::class, { throw IllegalStateException("No Artist list") })) { it, other -> Pair(it as Artist, other as Name) }
-            .zip(data.getOrElse(Id::class, { throw IllegalStateException("No Artist list") })) { it, other -> Track(other as Id, it.first, it.second) }
+            .zip(data.getOrElse(Name::class, { throw IllegalStateException("No Name list") })) { it, other -> Pair(it as Artist, other as Name) }
+            .zip(data.getOrElse(Id::class, { throw IllegalStateException("No Id list") })) { it, other -> Track(other as Id, it.first, it.second) }
             .associateBy { it.id }
 
     @Suppress("UNCHECKED_CAST") // we know its a List<Id> and given the above didn't NPE it will be safe here
