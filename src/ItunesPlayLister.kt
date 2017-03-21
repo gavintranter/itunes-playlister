@@ -1,29 +1,47 @@
 import java.io.File
-import kotlin.reflect.KClass
 
-private interface Element
+private sealed class Element(val value: String) {
 
-private data class Empty(val value: String = "") : Element
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (other?.javaClass != javaClass) return false
 
-private data class Id(val value: String) : Element {
-    override fun toString() : String {
-        return value
+        other as Element
+
+        if (value != other.value) return false
+
+        return true
+    }
+
+    override fun hashCode(): Int {
+        return value.hashCode()
+    }
+
+    override fun toString() = value
+
+    class Id(value: String) : Element(value)
+
+    class Artist(value: String) : Element(value)
+
+    class Name(value: String) : Element(value)
+
+    class Other(value: String) : Element(value)
+
+    companion object {
+        operator fun invoke(value: String) : Element {
+            return when {
+                value.startsWith(KeyType.ID.key) -> Element.Id(extractStringValue(value))
+                value.startsWith(KeyType.ARTIST.key) -> Element.Artist(extractStringValue(value))
+                value.startsWith(KeyType.NAME.key) -> Element.Name(extractStringValue(value))
+                else -> Element.Other("")
+            }
+        }
+
+        private fun extractStringValue(it: String) = it.replace(elementValueRegex, "$2").replace("&#38;", "&")
     }
 }
 
-private data class Artist(val value: String) : Element {
-    override fun toString() : String {
-        return value
-    }
-}
-
-private data class Name(val value: String) : Element {
-    override fun toString() : String {
-        return value
-    }
-}
-
-private data class Track(val id: Id, val artist: Artist, val name: Name) {
+private data class Track(val id: Element.Id, val artist: Element.Artist, val name: Element.Name) {
     override fun toString(): String {
         return "$artist - $name"
     }
@@ -39,7 +57,7 @@ private data class Playlist(val name: String, val tracks: List<Track>) {
 private enum class KeyType(val key: String) {
     ID("<key>Track ID</key>"),
     ARTIST("<key>Artist</key>"),
-    TRACK("<key>Name</key>")
+    NAME("<key>Name</key>")
 }
 
 private val elementValueRegex = ".*<(integer|string)>(.+?)</(integer|string)>".toRegex()
@@ -47,37 +65,37 @@ private val elementValueRegex = ".*<(integer|string)>(.+?)</(integer|string)>".t
 fun main(args: Array<String>) {
     val files = File("/users/Gavin/Documents/playlists").listFiles().filter { it.extension.equals("xml", true) }
 
-    files.forEach { println(createPlaylist(it.readLines()))}
+    files.forEach { println(createPlaylist(it.readLines())) }
 }
 
 private fun createPlaylist(lines: List<String>): Playlist {
-    val name = lines.last { it.contains(KeyType.TRACK.key) }.let(::extractStringValue)
-
-    return Playlist(name, getTracks(lines))
+    return Playlist(getPlaylistName(lines), getTracks(lines))
 }
+
+private fun getPlaylistName(lines: List<String>) = lines.last { it.contains(KeyType.NAME.key) }.let(::extractStringValue)
 
 private fun getTracks(lines: List<String>): List<Track> {
-    val data: Map<KClass<out Element>, List<Element>> = lines.map(String::trim)
-            .map(::extractElementValue)
-            .groupBy { it.javaClass.kotlin }
+    val data = lines.map { Element(it.trim()) }
+            .filter { it !is Element.Other }
+            .groupBy {
+                when (it) {
+                    is Element.Id -> KeyType.ID
+                    is Element.Artist -> KeyType.ARTIST
+                    is Element.Name -> KeyType.NAME
+                    is Element.Other -> Unit
+                }
+            }
 
-    val entries = data.getOrElse(Artist::class, { throw IllegalStateException("No Artist list") })
-            .zip(data.getOrElse(Name::class, { throw IllegalStateException("No Name list") })) { it, other -> Pair(it as Artist, other as Name) }
-            .zip(data.getOrElse(Id::class, { throw IllegalStateException("No Id list") })) { it, other -> Track(other as Id, it.first, it.second) }
+    val ids = data.getOrElse(KeyType.ID, { throw IllegalStateException("No Id list") })
+    val entries = data.getOrElse(KeyType.ARTIST, { throw IllegalStateException("No Artist list") })
+            .zip(data.getOrElse(KeyType.NAME, { throw IllegalStateException("No Name list") })) { it, other -> Pair(it as Element.Artist, other  as Element.Name) }
+            .zip(ids) { it, other -> Track(other as Element.Id, it.first, it.second) }
             .associateBy { it.id }
 
-    @Suppress("UNCHECKED_CAST") // we know its a List<Id> and given the above didn't NPE it will be safe here
-    return mapIdsToTracks(data.getOrElse(Id::class, { throw IllegalStateException("No list of Ids founds") }).drop(entries.count()) as List<Id>, entries)
-}
-
-private fun extractElementValue(value: String): Element = when {
-    value.startsWith(KeyType.ID.key) -> Id(extractStringValue(value))
-    value.startsWith(KeyType.ARTIST.key) -> Artist(extractStringValue(value))
-    value.startsWith(KeyType.TRACK.key) -> Name(extractStringValue(value))
-    else -> Empty()
+    return mapIdsToTracks(ids, entries)
 }
 
 private fun extractStringValue(it: String) = it.replace(elementValueRegex, "$2").replace("&#38;", "&")
 
-private fun mapIdsToTracks(ids: List<Id>, trackEntries: Map<Id, Track>) =
-        ids.map { trackEntries.getOrElse(it, { Track(it, Artist("Unknown"), Name("Unknown")) }) }
+private fun mapIdsToTracks(ids: List<Element>, trackEntries: Map<Element.Id, Track>) =
+        ids.drop(trackEntries.count()).map { trackEntries.getOrElse(it as Element.Id, { Track(it, Element.Artist("Unknown"), Element.Name("Unknown")) }) }
