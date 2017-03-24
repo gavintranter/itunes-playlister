@@ -42,16 +42,11 @@ private sealed class Element(val value: String) {
 }
 
 private data class Track(val id: Element.Id, val artist: Element.Artist, val name: Element.Name) {
-    override fun toString(): String {
-        return "$artist - $name"
-    }
+    override fun toString(): String = "$artist - $name"
 }
 
 private data class Playlist(val name: String, val tracks: List<Track>) {
-    override fun toString() : String {
-        val string = "\n\n==========\n$name:\n"
-        return string + tracks.joinToString("\n")
-    }
+    override fun toString() : String = "\n\n==========\n$name:\n" + tracks.joinToString("\n")
 }
 
 private enum class KeyType(val key: String) {
