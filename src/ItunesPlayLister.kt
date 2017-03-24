@@ -13,9 +13,7 @@ private sealed class Element(val value: String) {
         return true
     }
 
-    override fun hashCode(): Int {
-        return value.hashCode()
-    }
+    override fun hashCode(): Int = value.hashCode()
 
     override fun toString() = value
 
@@ -28,14 +26,17 @@ private sealed class Element(val value: String) {
     class Other(value: String) : Element(value)
 
     companion object {
-        operator fun invoke(value: String) : Element {
+        operator fun invoke(value: String): Element {
+            val element = value.trim()
             return when {
-                value.startsWith(KeyType.ID.key) -> Element.Id(extractStringValue(value))
-                value.startsWith(KeyType.ARTIST.key) -> Element.Artist(extractStringValue(value))
-                value.startsWith(KeyType.NAME.key) -> Element.Name(extractStringValue(value))
+                element.startsWith(KeyType.ID.key) -> Element.Id(extractStringValue(value))
+                element.startsWith(KeyType.ARTIST.key) -> Element.Artist(extractStringValue(value))
+                element.startsWith(KeyType.NAME.key) -> Element.Name(extractStringValue(value))
                 else -> Element.Other("")
             }
         }
+
+        private val elementValueRegex = ".*<(integer|string)>(.+?)</(integer|string)>".toRegex()
 
         private fun extractStringValue(it: String) = it.replace(elementValueRegex, "$2").replace("&#38;", "&")
     }
@@ -52,10 +53,18 @@ private data class Playlist(val name: String, val tracks: List<Track>) {
 private enum class KeyType(val key: String) {
     ID("<key>Track ID</key>"),
     ARTIST("<key>Artist</key>"),
-    NAME("<key>Name</key>")
-}
+    NAME("<key>Name</key>"),
+    OTHER("");
 
-private val elementValueRegex = ".*<(integer|string)>(.+?)</(integer|string)>".toRegex()
+    companion object {
+        fun blah(value: Element) : KeyType = when (value) {
+            is Element.Id -> ID
+            is Element.Artist -> ARTIST
+            is Element.Name -> NAME
+            is Element.Other -> OTHER
+        }
+    }
+}
 
 fun main(args: Array<String>) {
     val files = File("/users/Gavin/Documents/playlists").listFiles().filter { it.extension.equals("xml", true) }
@@ -63,23 +72,14 @@ fun main(args: Array<String>) {
     files.forEach { println(createPlaylist(it.readLines())) }
 }
 
-private fun createPlaylist(lines: List<String>): Playlist {
-    return Playlist(getPlaylistName(lines), getTracks(lines))
-}
+private fun createPlaylist(lines: List<String>): Playlist = Playlist(getPlaylistName(lines), getTracks(lines))
 
-private fun getPlaylistName(lines: List<String>) = lines.last { it.contains(KeyType.NAME.key) }.let(::extractStringValue)
+private fun getPlaylistName(lines: List<String>): String = lines.last { it.contains(KeyType.NAME.key) }.let { Element(it) }.toString()
 
 private fun getTracks(lines: List<String>): List<Track> {
-    val data = lines.map { Element(it.trim()) }
+    val data = lines.map { Element(it) }
             .filter { it !is Element.Other }
-            .groupBy {
-                when (it) {
-                    is Element.Id -> KeyType.ID
-                    is Element.Artist -> KeyType.ARTIST
-                    is Element.Name -> KeyType.NAME
-                    is Element.Other -> Unit
-                }
-            }
+            .groupBy { KeyType.blah(it) }
 
     val ids = data.getOrElse(KeyType.ID, { throw IllegalStateException("No Id list") })
     val entries = data.getOrElse(KeyType.ARTIST, { throw IllegalStateException("No Artist list") })
@@ -89,8 +89,6 @@ private fun getTracks(lines: List<String>): List<Track> {
 
     return mapIdsToTracks(ids, entries)
 }
-
-private fun extractStringValue(it: String) = it.replace(elementValueRegex, "$2").replace("&#38;", "&")
 
 private fun mapIdsToTracks(ids: List<Element>, trackEntries: Map<Element.Id, Track>) =
         ids.drop(trackEntries.count()).map { trackEntries.getOrElse(it as Element.Id, { Track(it, Element.Artist("Unknown"), Element.Name("Unknown")) }) }
