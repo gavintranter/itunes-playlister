@@ -2,6 +2,8 @@ import java.io.File
 
 private sealed class Element(val value: String) {
 
+    abstract fun getKeyType() : KeyType
+
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (other?.javaClass != javaClass) return false
@@ -17,13 +19,21 @@ private sealed class Element(val value: String) {
 
     override fun toString() = value
 
-    class Id(value: String) : Element(value)
+    class Id(value: String) : Element(value) {
+        override fun getKeyType(): KeyType = KeyType.ID
+    }
 
-    class Artist(value: String) : Element(value)
+    class Artist(value: String) : Element(value) {
+        override fun getKeyType(): KeyType = KeyType.ARTIST
+    }
 
-    class Name(value: String) : Element(value)
+    class Name(value: String) : Element(value) {
+        override fun getKeyType(): KeyType = KeyType.NAME
+    }
 
-    class Other(value: String) : Element(value)
+    class Other(value: String) : Element(value) {
+        override fun getKeyType(): KeyType = KeyType.OTHER
+    }
 
     companion object {
         operator fun invoke(value: String): Element {
@@ -54,16 +64,7 @@ private enum class KeyType(val key: String) {
     ID("<key>Track ID</key>"),
     ARTIST("<key>Artist</key>"),
     NAME("<key>Name</key>"),
-    OTHER("");
-
-    companion object {
-        fun blah(value: Element) : KeyType = when (value) {
-            is Element.Id -> ID
-            is Element.Artist -> ARTIST
-            is Element.Name -> NAME
-            is Element.Other -> OTHER
-        }
-    }
+    OTHER("")
 }
 
 fun main(args: Array<String>) {
@@ -79,7 +80,7 @@ private fun getPlaylistName(lines: List<String>): String = lines.last { it.conta
 private fun getTracks(lines: List<String>): List<Track> {
     val data = lines.map { Element(it) }
             .filter { it !is Element.Other }
-            .groupBy { KeyType.blah(it) }
+            .groupBy { it.getKeyType() }
 
     val ids = data.getOrElse(KeyType.ID, { throw IllegalStateException("No Id list") })
     val entries = data.getOrElse(KeyType.ARTIST, { throw IllegalStateException("No Artist list") })
