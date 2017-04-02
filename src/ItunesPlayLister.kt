@@ -56,7 +56,7 @@ private data class Track(val id: Element.Id, val artist: Element.Artist, val nam
     override fun toString(): String = "$artist - $name"
 }
 
-private data class Playlist(val name: String, val tracks: List<Track>) {
+private data class Playlist(val name: Element.Name, val tracks: List<Track>) {
     override fun toString() : String = "\n\n==========\n$name:\n" + tracks.joinToString("\n")
 }
 
@@ -73,22 +73,19 @@ fun main(args: Array<String>) {
     files.forEach { println(createPlaylist(it.readLines())) }
 }
 
-private fun createPlaylist(lines: List<String>): Playlist = Playlist(getPlaylistName(lines), getTracks(lines))
-
-private fun getPlaylistName(lines: List<String>): String = lines.last { it.contains(KeyType.NAME.key) }.let { Element(it) }.toString()
-
-private fun getTracks(lines: List<String>): List<Track> {
+private fun createPlaylist(lines: List<String>): Playlist {
     val data = lines.map { Element(it) }
             .filter { it !is Element.Other }
             .groupBy { it.getKeyType() }
 
     val ids = data.getOrElse(KeyType.ID, { throw IllegalStateException("No Id list") })
+    val names = data.getOrElse(KeyType.NAME, { throw IllegalStateException("No Name list") })
     val entries = data.getOrElse(KeyType.ARTIST, { throw IllegalStateException("No Artist list") })
-            .zip(data.getOrElse(KeyType.NAME, { throw IllegalStateException("No Name list") })) { it, other -> Pair(it as Element.Artist, other  as Element.Name) }
+            .zip(names) { it, other -> Pair(it as Element.Artist, other  as Element.Name) }
             .zip(ids) { it, other -> Track(other as Element.Id, it.first, it.second) }
             .associateBy { it.id }
 
-    return mapIdsToTracks(ids, entries)
+    return Playlist(names.last() as Element.Name, mapIdsToTracks(ids, entries))
 }
 
 private fun mapIdsToTracks(ids: List<Element>, trackEntries: Map<Element.Id, Track>) =
