@@ -19,19 +19,19 @@ private sealed class Element(val value: String) {
 
     override fun toString() = value
 
-    class Id(value: String) : Element(value) {
+    class Id(value: String = "Unknown") : Element(value) {
         override fun getKeyType(): KeyType = KeyType.ID
     }
 
-    class Artist(value: String) : Element(value) {
+    class Artist(value: String = "Unknown") : Element(value) {
         override fun getKeyType(): KeyType = KeyType.ARTIST
     }
 
-    class Name(value: String) : Element(value) {
+    class Name(value: String = "Unknown") : Element(value) {
         override fun getKeyType(): KeyType = KeyType.NAME
     }
 
-    class Other(value: String) : Element(value) {
+    class Other : Element("Unknown") {
         override fun getKeyType(): KeyType = KeyType.OTHER
     }
 
@@ -42,7 +42,7 @@ private sealed class Element(val value: String) {
                 element.startsWith(KeyType.ID.key) -> Element.Id(extractStringValue(value))
                 element.startsWith(KeyType.ARTIST.key) -> Element.Artist(extractStringValue(value))
                 element.startsWith(KeyType.NAME.key) -> Element.Name(extractStringValue(value))
-                else -> Element.Other("")
+                else -> Element.Other()
             }
         }
 
@@ -52,7 +52,7 @@ private sealed class Element(val value: String) {
     }
 }
 
-private data class Track(val id: Element.Id, val artist: Element.Artist, val name: Element.Name) {
+private data class Track(val id: Element.Id = Element.Id(), val artist: Element.Artist = Element.Artist(), val name: Element.Name = Element.Name()) {
     override fun toString(): String = "$artist - $name"
 }
 
@@ -89,4 +89,4 @@ private fun createPlaylist(lines: List<String>): Playlist {
 }
 
 private fun mapIdsToTracks(ids: List<Element>, trackEntries: Map<Element.Id, Track>) =
-        ids.drop(trackEntries.count()).map { trackEntries.getOrElse(it as Element.Id, { Track(it, Element.Artist("Unknown"), Element.Name("Unknown")) }) }
+        ids.drop(trackEntries.count()).map { trackEntries.getOrElse(it as Element.Id, { Track() }) }
