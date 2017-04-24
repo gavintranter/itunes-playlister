@@ -57,7 +57,7 @@ private data class Track(val id: Element.Id = Element.Id(), val artist: Element.
 }
 
 private data class Playlist(val name: Element.Name, val tracks: List<Track>) {
-    override fun toString() : String = "\n\n==========\n$name:\n" + tracks.joinToString("\n")
+    override fun toString() : String = "\n\n==========\n$name:\n${tracks.joinToString("\n")}"
 }
 
 private enum class KeyType(val key: String) {
