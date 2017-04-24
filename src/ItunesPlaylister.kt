@@ -37,11 +37,10 @@ private sealed class Element(val value: String) {
 
     companion object {
         operator fun invoke(value: String): Element {
-            val element = value.trim()
             return when {
-                element.startsWith(KeyType.ID.key) -> Element.Id(extractStringValue(value))
-                element.startsWith(KeyType.ARTIST.key) -> Element.Artist(extractStringValue(value))
-                element.startsWith(KeyType.NAME.key) -> Element.Name(extractStringValue(value))
+                value.contains(KeyType.ID.key) -> Element.Id(extractStringValue(value))
+                value.contains(KeyType.ARTIST.key) -> Element.Artist(extractStringValue(value))
+                value.contains(KeyType.NAME.key) -> Element.Name(extractStringValue(value))
                 else -> Element.Other()
             }
         }
