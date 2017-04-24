@@ -80,13 +80,12 @@ private fun createPlaylist(lines: List<String>): Playlist {
 
     val ids = data.getOrElse(KeyType.ID, { throw IllegalStateException("No Id list") })
     val names = data.getOrElse(KeyType.NAME, { throw IllegalStateException("No Name list") })
+    val trackOrder = ids.drop(ids.size / 2)
+
     val entries = data.getOrElse(KeyType.ARTIST, { throw IllegalStateException("No Artist list") })
             .zip(names) { it, other -> Pair(it as Element.Artist, other  as Element.Name) }
             .zip(ids) { it, other -> Track(other as Element.Id, it.first, it.second) }
-            .associateBy { it.id }
+            .sortedWith(compareBy({trackOrder.indexOf(it.id)}))
 
-    return Playlist(names.last() as Element.Name, mapIdsToTracks(ids, entries))
+    return Playlist(names.last() as Element.Name, entries)
 }
-
-private fun mapIdsToTracks(ids: List<Element>, trackEntries: Map<Element.Id, Track>) =
-        ids.drop(trackEntries.count()).map { trackEntries.getOrElse(it as Element.Id, { Track() }) }
