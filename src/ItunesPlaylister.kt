@@ -77,14 +77,16 @@ private fun createPlaylist(lines: List<String>): Playlist {
             .filter { it !is Element.Other }
             .groupBy { it.getKeyType() }
 
-    val ids = data.getOrElse(KeyType.ID, { throw IllegalStateException("No Id list") })
-    val names = data.getOrElse(KeyType.NAME, { throw IllegalStateException("No Name list") })
-    val trackOrder = ids.drop(ids.size / 2)
+    return with(data) {
+        val ids = getOrElse(KeyType.ID, { throw IllegalStateException("No Id list") })
+        val names = getOrElse(KeyType.NAME, { throw IllegalStateException("No Name list") })
+        val trackOrder = ids.drop(ids.size / 2)
 
-    val entries = data.getOrElse(KeyType.ARTIST, { throw IllegalStateException("No Artist list") })
-            .zip(names) { it, other -> Pair(it as Element.Artist, other  as Element.Name) }
-            .zip(ids) { (first, second), other -> Track(other as Element.Id, first, second) }
-            .sortedWith(compareBy({trackOrder.indexOf(it.id)}))
+        val entries = getOrElse(KeyType.ARTIST, { throw IllegalStateException("No Artist list") })
+                .zip(names) { it, other -> Pair(it as Element.Artist, other  as Element.Name) }
+                .zip(ids) { (first, second), other -> Track(other as Element.Id, first, second) }
+                .sortedWith(compareBy({trackOrder.indexOf(it.id)}))
 
-    return Playlist(names.last() as Element.Name, entries)
+        Playlist(names.last() as Element.Name, entries)
+    }
 }
