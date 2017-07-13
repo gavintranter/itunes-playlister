@@ -83,7 +83,7 @@ private fun createPlaylist(lines: List<String>): Playlist {
 
     val entries = data.getOrElse(KeyType.ARTIST, { throw IllegalStateException("No Artist list") })
             .zip(names) { it, other -> Pair(it as Element.Artist, other  as Element.Name) }
-            .zip(ids) { it, other -> Track(other as Element.Id, it.first, it.second) }
+            .zip(ids) { (first, second), other -> Track(other as Element.Id, first, second) }
             .sortedWith(compareBy({trackOrder.indexOf(it.id)}))
 
     return Playlist(names.last() as Element.Name, entries)
