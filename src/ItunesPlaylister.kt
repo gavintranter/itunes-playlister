@@ -31,17 +31,13 @@ private sealed class Element(val value: String) {
         override fun getKeyType(): KeyType = KeyType.NAME
     }
 
-    class Other : Element("Unknown") {
-        override fun getKeyType(): KeyType = KeyType.OTHER
-    }
-
     companion object {
-        operator fun invoke(value: String): Element {
+        operator fun invoke(value: String): Element? {
             return when {
                 value.contains(KeyType.ID.key) -> Element.Id(extractStringValue(value))
                 value.contains(KeyType.ARTIST.key) -> Element.Artist(extractStringValue(value))
                 value.contains(KeyType.NAME.key) -> Element.Name(extractStringValue(value))
-                else -> Element.Other()
+                else -> null
             }
         }
 
@@ -62,8 +58,7 @@ private data class Playlist(val name: Element.Name, val tracks: List<Track>) {
 private enum class KeyType(val key: String) {
     ID("<key>Track ID</key>"),
     ARTIST("<key>Artist</key>"),
-    NAME("<key>Name</key>"),
-    OTHER("")
+    NAME("<key>Name</key>")
 }
 
 fun main(args: Array<String>) {
@@ -73,8 +68,7 @@ fun main(args: Array<String>) {
 }
 
 private fun createPlaylist(lines: List<String>): Playlist {
-    val data = lines.map { Element(it) }
-            .filter { it !is Element.Other }
+    val data = lines.mapNotNull { Element(it) }
             .groupBy { it.getKeyType() }
 
     return with(data) {
