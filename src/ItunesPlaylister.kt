@@ -75,8 +75,8 @@ private fun createPlaylist(lines: List<String>): Playlist {
         val ids = getValue(KeyType.ID)
         val names = getValue(KeyType.NAME)
         val entries = getValue(KeyType.ARTIST)
-                .zip(names) { it, other -> Pair(it as Element.Artist, other  as Element.Name) }
-                .zip(ids) { (first, second), other -> Track(other as Element.Id, first, second) }
+                .zip(names) { artist, name -> Pair(artist as Element.Artist, name  as Element.Name) }
+                .zip(ids) { (artist, name), id -> Track(id as Element.Id, artist, name) }
                 .sortedWith(compareBy {ids.indexOf(it.id)})
 
         Playlist(names.last() as Element.Name, entries)
