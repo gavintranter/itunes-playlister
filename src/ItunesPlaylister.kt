@@ -3,8 +3,6 @@ import kotlin.reflect.KClass
 
 private sealed class Element(val value: String) {
 
-    abstract fun getKeyType() : KeyType
-
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (other?.javaClass != javaClass) return false
@@ -33,20 +31,20 @@ private sealed class Element(val value: String) {
         private val elementValueRegex = ".*<(integer|string)>(.+?)</(integer|string)>".toRegex()
 
         private fun extractStringValue(it: String) = it.replace(elementValueRegex, "$2").replace("&#38;", "&")
+
+        private enum class KeyType(val key: String) {
+            ID("<key>Track ID</key>"),
+            ARTIST("<key>Artist</key>"),
+            NAME("<key>Name</key>")
+        }
     }
 }
 
-private class Id(value: String = "Unknown") : Element(value) {
-    override fun getKeyType(): KeyType = KeyType.ID
-}
+private class Id(value: String = "Unknown") : Element(value)
 
-private class Artist(value: String = "Unknown") : Element(value) {
-    override fun getKeyType(): KeyType = KeyType.ARTIST
-}
+private class Artist(value: String = "Unknown") : Element(value)
 
-private class Name(value: String = "Unknown") : Element(value) {
-    override fun getKeyType(): KeyType = KeyType.NAME
-}
+private class Name(value: String = "Unknown") : Element(value)
 
 private data class Track(val id: Id = Id(), val artist: Artist = Artist(), val name: Name = Name()) {
     override fun toString(): String = "$artist - $name"
@@ -54,12 +52,6 @@ private data class Track(val id: Id = Id(), val artist: Artist = Artist(), val n
 
 private data class Playlist(val name: Name, val tracks: List<Track>) {
     override fun toString() : String = "\n\n==========\n$name:\n${tracks.joinToString("\n")}"
-}
-
-private enum class KeyType(val key: String) {
-    ID("<key>Track ID</key>"),
-    ARTIST("<key>Artist</key>"),
-    NAME("<key>Name</key>")
 }
 
 fun main(args: Array<String>) {
