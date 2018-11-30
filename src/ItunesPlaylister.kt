@@ -1,4 +1,5 @@
 import java.io.File
+import kotlin.reflect.KClass
 
 private sealed class Element(val value: String) {
 
@@ -68,13 +69,13 @@ fun main(args: Array<String>) {
 }
 
 private fun createPlaylist(lines: List<String>): Playlist {
-    val data = lines.mapNotNull { Element(it) }
-            .groupBy { it.getKeyType() }
+    val data: Map<KClass<out Element>, List<Element>> = lines.mapNotNull { Element(it) }
+            .groupBy { it.javaClass.kotlin }
 
     return with(data) {
-        val ids = getValue(KeyType.ID)
-        val names = getValue(KeyType.NAME)
-        val entries = getValue(KeyType.ARTIST)
+        val ids = getValue(Id::class)
+        val names = getValue(Name::class)
+        val entries = getValue(Artist::class)
                 .zip(names) { artist, name -> Pair(artist as Artist, name  as Name) }
                 .zip(ids) { (artist, name), id -> Track(id as Id, artist, name) }
                 .sortedWith(compareBy {ids.indexOf(it.id)})
