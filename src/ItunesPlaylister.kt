@@ -19,24 +19,12 @@ private sealed class Element(val value: String) {
 
     override fun toString() = value
 
-    class Id(value: String = "Unknown") : Element(value) {
-        override fun getKeyType(): KeyType = KeyType.ID
-    }
-
-    class Artist(value: String = "Unknown") : Element(value) {
-        override fun getKeyType(): KeyType = KeyType.ARTIST
-    }
-
-    class Name(value: String = "Unknown") : Element(value) {
-        override fun getKeyType(): KeyType = KeyType.NAME
-    }
-
     companion object {
         operator fun invoke(value: String): Element? {
             return when {
-                value.contains(KeyType.ID.key) -> Element.Id(extractStringValue(value))
-                value.contains(KeyType.ARTIST.key) -> Element.Artist(extractStringValue(value))
-                value.contains(KeyType.NAME.key) -> Element.Name(extractStringValue(value))
+                value.contains(KeyType.ID.key) -> Id(extractStringValue(value))
+                value.contains(KeyType.ARTIST.key) -> Artist(extractStringValue(value))
+                value.contains(KeyType.NAME.key) -> Name(extractStringValue(value))
                 else -> null
             }
         }
@@ -47,11 +35,23 @@ private sealed class Element(val value: String) {
     }
 }
 
-private data class Track(val id: Element.Id = Element.Id(), val artist: Element.Artist = Element.Artist(), val name: Element.Name = Element.Name()) {
+private class Id(value: String = "Unknown") : Element(value) {
+    override fun getKeyType(): KeyType = KeyType.ID
+}
+
+private class Artist(value: String = "Unknown") : Element(value) {
+    override fun getKeyType(): KeyType = KeyType.ARTIST
+}
+
+private class Name(value: String = "Unknown") : Element(value) {
+    override fun getKeyType(): KeyType = KeyType.NAME
+}
+
+private data class Track(val id: Id = Id(), val artist: Artist = Artist(), val name: Name = Name()) {
     override fun toString(): String = "$artist - $name"
 }
 
-private data class Playlist(val name: Element.Name, val tracks: List<Track>) {
+private data class Playlist(val name: Name, val tracks: List<Track>) {
     override fun toString() : String = "\n\n==========\n$name:\n${tracks.joinToString("\n")}"
 }
 
@@ -75,10 +75,10 @@ private fun createPlaylist(lines: List<String>): Playlist {
         val ids = getValue(KeyType.ID)
         val names = getValue(KeyType.NAME)
         val entries = getValue(KeyType.ARTIST)
-                .zip(names) { artist, name -> Pair(artist as Element.Artist, name  as Element.Name) }
-                .zip(ids) { (artist, name), id -> Track(id as Element.Id, artist, name) }
+                .zip(names) { artist, name -> Pair(artist as Artist, name  as Name) }
+                .zip(ids) { (artist, name), id -> Track(id as Id, artist, name) }
                 .sortedWith(compareBy {ids.indexOf(it.id)})
 
-        Playlist(names.last() as Element.Name, entries)
+        Playlist(names.last() as Name, entries)
     }
 }
