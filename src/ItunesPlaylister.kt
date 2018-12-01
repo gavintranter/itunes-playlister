@@ -19,15 +19,6 @@ private sealed class Element(val value: String) {
     override fun toString() = value
 
     companion object {
-        operator fun invoke(value: String): Element? {
-            return when {
-                value.contains(KeyType.ID.key) -> Id(extractStringValue(value))
-                value.contains(KeyType.ARTIST.key) -> Artist(extractStringValue(value))
-                value.contains(KeyType.NAME.key) -> Name(extractStringValue(value))
-                else -> null
-            }
-        }
-
         private val elementValueRegex = ".*<(integer|string)>(.+?)</(integer|string)>".toRegex()
 
         private fun extractStringValue(it: String) = it.replace(elementValueRegex, "$2").replace("&#38;", "&")
@@ -36,6 +27,15 @@ private sealed class Element(val value: String) {
             ID("<key>Track ID</key>"),
             ARTIST("<key>Artist</key>"),
             NAME("<key>Name</key>")
+        }
+
+        operator fun invoke(value: String): Element? {
+            return when {
+                value.contains(KeyType.ID.key) -> Id(extractStringValue(value))
+                value.contains(KeyType.ARTIST.key) -> Artist(extractStringValue(value))
+                value.contains(KeyType.NAME.key) -> Name(extractStringValue(value))
+                else -> null
+            }
         }
     }
 }
