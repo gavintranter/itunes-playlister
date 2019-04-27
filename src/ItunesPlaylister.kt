@@ -1,3 +1,4 @@
+import Element.*
 import java.io.File
 import kotlin.reflect.KClass
 
@@ -31,20 +32,18 @@ private sealed class Element(val value: String) {
 
         operator fun invoke(value: String): Element? {
             return when {
-                value.contains(KeyType.ID.key) -> Id(extractStringValue(value))
-                value.contains(KeyType.ARTIST.key) -> Artist(extractStringValue(value))
-                value.contains(KeyType.NAME.key) -> Name(extractStringValue(value))
+                KeyType.ID.key in value -> Id(extractStringValue(value))
+                KeyType.ARTIST.key in value -> Artist(extractStringValue(value))
+                KeyType.NAME.key in value -> Name(extractStringValue(value))
                 else -> null
             }
         }
     }
+
+    class Id(value: String = "Unknown") : Element(value)
+    class Artist(value: String = "Unknown") : Element(value)
+    class Name(value: String = "Unknown") : Element(value)
 }
-
-private class Id(value: String = "Unknown") : Element(value)
-
-private class Artist(value: String = "Unknown") : Element(value)
-
-private class Name(value: String = "Unknown") : Element(value)
 
 private data class Track(val id: Id = Id(), val artist: Artist = Artist(), val name: Name = Name()) {
     override fun toString(): String = "$artist - $name"
